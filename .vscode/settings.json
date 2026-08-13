@@ -1,0 +1,14 @@
+{
+  "[csharp]": {
+    "editor.defaultFormatter": "ms-dotnettools.csharp",
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.formatOnType": true,
+  },
+
+  "dotnet.autoInsert.enableAutoInsert": true,
+  "dotnet.formatting.organizeImportsOnFormat": true,
+
+  "dotnet.backgroundAnalysis.analyzerDiagnosticsScope": "fullSolution",
+  "dotnet.backgroundAnalysis.compilerDiagnosticsScope": "fullSolution"
+}
