@@ -43,6 +43,7 @@ namespace PolarGeometry
         private void Awake()
         {
             lineRenderer = GetComponent<LineRenderer>();
+            lineRenderer.useWorldSpace = false;
 
             if (function == null)
             {
