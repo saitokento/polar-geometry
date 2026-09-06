@@ -4,7 +4,7 @@ using UnityEngine.Splines;
 namespace PolarGeometry
 {
     [RequireComponent(typeof(SplineAnimate))]
-    public class PolarFunctionSplineAnimate : MonoBehaviour
+    public class SplineAnimation : MonoBehaviour
     {
         [SerializeField]
         private PolarFunctionSpline splineSource;
