@@ -60,11 +60,6 @@ namespace PolarGeometry
             }
         }
 
-        private void Start()
-        {
-            Generate();
-        }
-
         public void Generate()
         {
             if (function == null)
