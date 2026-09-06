@@ -6,5 +6,6 @@ namespace PolarGeometry
     {
         public abstract float Evaluate(float theta);
         public abstract float? Period { get; }
+        public abstract string Formula { get; }
     }
 }
