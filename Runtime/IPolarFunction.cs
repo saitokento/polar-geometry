@@ -4,6 +4,6 @@ namespace PolarGeometry
     {
         float Evaluate(float theta);
 
-        float? Period { get; }
+        float? ThetaSpan { get; }
     }
 }
