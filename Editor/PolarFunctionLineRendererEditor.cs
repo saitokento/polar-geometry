@@ -59,11 +59,6 @@ namespace PolarGeometry.Editor
 
             EditorGUILayout.Space();
 
-            EditorGUILayout.LabelField(
-                "Range",
-                EditorStyles.boldLabel
-            );
-
             EditorGUILayout.PropertyField(
                 useFunctionThetaSpan
             );
@@ -80,11 +75,6 @@ namespace PolarGeometry.Editor
             }
 
             EditorGUILayout.Space();
-
-            EditorGUILayout.LabelField(
-                "Sampling",
-                EditorStyles.boldLabel
-            );
 
             EditorGUILayout.PropertyField(
                 useAdaptiveSampling
