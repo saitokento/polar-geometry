@@ -4,5 +4,8 @@
   "displayName": "Polar Geometry",
   "author": {
     "name": "Saito Kento"
+  },
+  "dependencies": {
+    "com.unity.splines": "2.8.4"
   }
 }
