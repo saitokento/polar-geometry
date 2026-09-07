@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace PolarGeometry
@@ -214,11 +214,41 @@ namespace PolarGeometry
                 return;
             }
 
+            if (polygonCollider.attachedRigidbody == null)
+            {
+                ConvertMeshToLocalSpace(
+                    generatedMesh
+                );
+            }
+
             generatedMesh.name =
                 $"{name} Polar Function Polygon Mesh";
 
             meshFilter.sharedMesh =
                 generatedMesh;
+        }
+
+        private void ConvertMeshToLocalSpace(
+            Mesh mesh)
+        {
+            Vector3[] vertices =
+                mesh.vertices;
+
+            Transform meshTransform =
+                meshFilter.transform;
+
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                vertices[i] =
+                    meshTransform.InverseTransformPoint(
+                        vertices[i]
+                    );
+            }
+
+            mesh.vertices =
+                vertices;
+
+            mesh.RecalculateBounds();
         }
 
         private void ClearMesh()
