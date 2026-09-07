@@ -1,0 +1,248 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace PolarGeometry
+{
+    [RequireComponent(typeof(PolygonCollider2D))]
+    [RequireComponent(typeof(MeshFilter))]
+    public class PolarFunctionPolygon : MonoBehaviour
+    {
+        [SerializeField]
+        private PolarFunction function;
+
+        [Header("Range")]
+        [SerializeField]
+        private bool useFunctionThetaSpan = false;
+
+        [SerializeField]
+        private float startThetaDegrees = 0f;
+
+        [SerializeField]
+        private float endThetaDegrees = 360f;
+
+        [Header("Sampling")]
+        [SerializeField]
+        private bool useAdaptiveSampling = false;
+
+        [SerializeField]
+        private float deltaThetaDegrees = 1f;
+
+        [SerializeField]
+        private float maxCoordinateDelta = 0.01f;
+
+        [SerializeField]
+        private float maxDeltaThetaDegrees = 10f;
+
+        [SerializeField]
+        private int maxDepth = 16;
+
+        [SerializeField]
+        private float tolerance = 0f;
+
+        [Header("Output")]
+        [SerializeField]
+        private bool enableCollider = true;
+
+        private PolygonCollider2D polygonCollider;
+        private MeshFilter meshFilter;
+
+        private Mesh generatedMesh;
+
+        private void Awake()
+        {
+            polygonCollider =
+                GetComponent<PolygonCollider2D>();
+
+            meshFilter =
+                GetComponent<MeshFilter>();
+
+            if (function == null)
+            {
+                function =
+                    GetComponent<PolarFunction>();
+            }
+        }
+
+        private void Start()
+        {
+            Generate();
+        }
+
+        public void Generate()
+        {
+            if (!TrySamplePositions(
+                out List<Vector2> positions))
+            {
+                Clear();
+                return;
+            }
+
+            polygonCollider.pathCount = 1;
+
+            polygonCollider.SetPath(
+                0,
+                positions
+            );
+
+            GenerateMesh();
+
+            polygonCollider.enabled =
+                enableCollider;
+        }
+
+        public void Clear()
+        {
+            if (polygonCollider != null)
+            {
+                polygonCollider.pathCount = 0;
+                polygonCollider.enabled =
+                    enableCollider;
+            }
+
+            ClearMesh();
+        }
+
+        private bool TrySamplePositions(
+            out List<Vector2> positions)
+        {
+            positions = null;
+
+            if (function == null)
+            {
+                Debug.LogError(
+                    "PolarFunction is not assigned.",
+                    this
+                );
+
+                return false;
+            }
+
+            float startTheta =
+                startThetaDegrees * Mathf.Deg2Rad;
+
+            float endTheta;
+
+            if (useFunctionThetaSpan)
+            {
+                if (function.ThetaSpan is not float thetaSpan)
+                {
+                    Debug.LogError(
+                        "The polar function does not have a known theta span.",
+                        this
+                    );
+
+                    return false;
+                }
+
+                endTheta =
+                    startTheta + thetaSpan;
+            }
+            else
+            {
+                endTheta =
+                    endThetaDegrees * Mathf.Deg2Rad;
+            }
+
+            bool includeEnd =
+                !useFunctionThetaSpan;
+
+            if (useAdaptiveSampling)
+            {
+                float maxDeltaTheta =
+                    maxDeltaThetaDegrees * Mathf.Deg2Rad;
+
+                positions =
+                    function.SamplePositionsAdaptive(
+                        startTheta,
+                        endTheta,
+                        maxCoordinateDelta,
+                        maxDeltaTheta,
+                        includeEnd,
+                        maxDepth,
+                        tolerance
+                    );
+            }
+            else
+            {
+                float deltaTheta =
+                    deltaThetaDegrees * Mathf.Deg2Rad;
+
+                positions =
+                    function.SamplePositions(
+                        startTheta,
+                        endTheta,
+                        deltaTheta,
+                        includeEnd,
+                        tolerance
+                    );
+            }
+
+            if (positions.Count < 3)
+            {
+                Debug.LogError(
+                    "At least three positions are required to create a polygon.",
+                    this
+                );
+
+                return false;
+            }
+
+            return true;
+        }
+
+        private void GenerateMesh()
+        {
+            ClearMesh();
+
+            generatedMesh =
+                polygonCollider.CreateMesh(
+                    useBodyPosition: false,
+                    useBodyRotation: false
+                );
+
+            if (generatedMesh == null)
+            {
+                Debug.LogError(
+                    "Failed to create mesh from PolygonCollider2D.",
+                    this
+                );
+
+                return;
+            }
+
+            generatedMesh.name =
+                $"{name} Polar Function Polygon Mesh";
+
+            meshFilter.sharedMesh =
+                generatedMesh;
+        }
+
+        private void ClearMesh()
+        {
+            if (meshFilter != null &&
+                meshFilter.sharedMesh == generatedMesh)
+            {
+                meshFilter.sharedMesh = null;
+            }
+
+            if (generatedMesh == null)
+                return;
+
+            if (Application.isPlaying)
+            {
+                Destroy(generatedMesh);
+            }
+            else
+            {
+                DestroyImmediate(generatedMesh);
+            }
+
+            generatedMesh = null;
+        }
+
+        private void OnDestroy()
+        {
+            ClearMesh();
+        }
+    }
+}
