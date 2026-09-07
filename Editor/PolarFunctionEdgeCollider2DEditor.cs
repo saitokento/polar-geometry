@@ -21,6 +21,8 @@ namespace PolarGeometry.Editor
         private SerializedProperty loop;
         private SerializedProperty matchLineRendererWidth;
 
+        private SerializedProperty autoUpdate;
+
         private void OnEnable()
         {
             function =
@@ -58,6 +60,9 @@ namespace PolarGeometry.Editor
 
             matchLineRendererWidth =
                 serializedObject.FindProperty("matchLineRendererWidth");
+
+            autoUpdate =
+                serializedObject.FindProperty("autoUpdate");
         }
 
         public override void OnInspectorGUI()
@@ -122,6 +127,12 @@ namespace PolarGeometry.Editor
 
             EditorGUILayout.PropertyField(
                 matchLineRendererWidth
+            );
+
+            EditorGUILayout.Space();
+
+            EditorGUILayout.PropertyField(
+                autoUpdate
             );
 
             serializedObject.ApplyModifiedProperties();

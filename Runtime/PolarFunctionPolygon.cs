@@ -43,6 +43,10 @@ namespace PolarGeometry
         [SerializeField]
         private bool enableCollider = true;
 
+        [Header("Update")]
+        [SerializeField]
+        private bool autoUpdate = true;
+
         private PolygonCollider2D polygonCollider;
         private MeshFilter meshFilter;
 
@@ -243,6 +247,32 @@ namespace PolarGeometry
         private void OnDestroy()
         {
             ClearMesh();
+        }
+
+        private void OnEnable()
+        {
+            SubscribeFunction();
+        }
+
+        private void OnDisable()
+        {
+            UnsubscribeFunction();
+        }
+
+        private void SubscribeFunction()
+        {
+            if (function != null && autoUpdate)
+            {
+                function.Changed += Generate;
+            }
+        }
+
+        private void UnsubscribeFunction()
+        {
+            if (function != null)
+            {
+                function.Changed -= Generate;
+            }
         }
     }
 }

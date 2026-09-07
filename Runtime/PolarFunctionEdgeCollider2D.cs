@@ -45,6 +45,10 @@ namespace PolarGeometry
         [SerializeField]
         private bool matchLineRendererWidth = false;
 
+        [Header("Update")]
+        [SerializeField]
+        private bool autoUpdate = true;
+
         private EdgeCollider2D edgeCollider;
 
         private void Awake()
@@ -166,6 +170,32 @@ namespace PolarGeometry
 
             edgeCollider.edgeRadius =
                 lineRenderer.widthMultiplier * 0.5f;
+        }
+
+        private void OnEnable()
+        {
+            SubscribeFunction();
+        }
+
+        private void OnDisable()
+        {
+            UnsubscribeFunction();
+        }
+
+        private void SubscribeFunction()
+        {
+            if (function != null && autoUpdate)
+            {
+                function.Changed += Generate;
+            }
+        }
+
+        private void UnsubscribeFunction()
+        {
+            if (function != null)
+            {
+                function.Changed -= Generate;
+            }
         }
     }
 }

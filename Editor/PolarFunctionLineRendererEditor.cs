@@ -18,6 +18,8 @@ namespace PolarGeometry.Editor
         private SerializedProperty maxDepth;
         private SerializedProperty tolerance;
 
+        private SerializedProperty autoUpdate;
+
         private void OnEnable()
         {
             function =
@@ -49,6 +51,9 @@ namespace PolarGeometry.Editor
 
             tolerance =
                 serializedObject.FindProperty("tolerance");
+
+            autoUpdate =
+                serializedObject.FindProperty("autoUpdate");
         }
 
         public override void OnInspectorGUI()
@@ -103,6 +108,12 @@ namespace PolarGeometry.Editor
 
             EditorGUILayout.PropertyField(
                 tolerance
+            );
+
+            EditorGUILayout.Space();
+
+            EditorGUILayout.PropertyField(
+                autoUpdate
             );
 
             serializedObject.ApplyModifiedProperties();

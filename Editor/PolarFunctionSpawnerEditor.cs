@@ -17,6 +17,8 @@ namespace PolarGeometry.Editor
         private SerializedProperty deltaThetaDegrees;
         private SerializedProperty alignToPath;
 
+        private SerializedProperty autoUpdate;
+
         private void OnEnable()
         {
             function =
@@ -52,6 +54,9 @@ namespace PolarGeometry.Editor
                 serializedObject.FindProperty(
                     "alignToPath"
                 );
+
+            autoUpdate =
+                serializedObject.FindProperty("autoUpdate");
         }
 
         public override void OnInspectorGUI()
@@ -91,6 +96,12 @@ namespace PolarGeometry.Editor
 
             EditorGUILayout.PropertyField(
                 alignToPath
+            );
+
+            EditorGUILayout.Space();
+
+            EditorGUILayout.PropertyField(
+                autoUpdate
             );
 
             serializedObject.ApplyModifiedProperties();

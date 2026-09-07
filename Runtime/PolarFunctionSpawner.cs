@@ -32,6 +32,10 @@ namespace PolarGeometry
         [SerializeField]
         private bool alignToPath = false;
 
+        [Header("Update")]
+        [SerializeField]
+        private bool autoUpdate = false;
+
         private readonly List<GameObject> spawnedObjects =
             new List<GameObject>();
 
@@ -297,6 +301,32 @@ namespace PolarGeometry
                 EvaluatePosition(thetaAfter);
 
             return after - before;
+        }
+
+        private void OnEnable()
+        {
+            SubscribeFunction();
+        }
+
+        private void OnDisable()
+        {
+            UnsubscribeFunction();
+        }
+
+        private void SubscribeFunction()
+        {
+            if (function != null && autoUpdate)
+            {
+                function.Changed += Spawn;
+            }
+        }
+
+        private void UnsubscribeFunction()
+        {
+            if (function != null)
+            {
+                function.Changed -= Spawn;
+            }
         }
     }
 }

@@ -38,6 +38,10 @@ namespace PolarGeometry
         [SerializeField]
         private float tolerance = 0f;
 
+        [Header("Update")]
+        [SerializeField]
+        private bool autoUpdate = true;
+
         private LineRenderer lineRenderer;
 
         private void Awake()
@@ -148,6 +152,32 @@ namespace PolarGeometry
 
             lineRenderer.positionCount = positions.Length;
             lineRenderer.SetPositions(positions);
+        }
+
+        private void OnEnable()
+        {
+            SubscribeFunction();
+        }
+
+        private void OnDisable()
+        {
+            UnsubscribeFunction();
+        }
+
+        private void SubscribeFunction()
+        {
+            if (function != null && autoUpdate)
+            {
+                function.Changed += Draw;
+            }
+        }
+
+        private void UnsubscribeFunction()
+        {
+            if (function != null)
+            {
+                function.Changed -= Draw;
+            }
         }
     }
 }

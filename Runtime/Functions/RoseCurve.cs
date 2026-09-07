@@ -12,6 +12,34 @@ namespace PolarGeometry
         [SerializeField]
         float k = 3;
 
+        public float A
+        {
+            get => a;
+            set
+            {
+                if (a == value)
+                    return;
+
+                a = value;
+
+                NotifyChanged();
+            }
+        }
+
+        public float K
+        {
+            get => k;
+            set
+            {
+                if (k == value)
+                    return;
+
+                k = value;
+
+                NotifyChanged();
+            }
+        }
+
         public override float Evaluate(float theta)
         {
             return a * Mathf.Cos(k * theta);

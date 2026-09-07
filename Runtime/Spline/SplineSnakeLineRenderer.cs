@@ -29,6 +29,9 @@ namespace PolarGeometry
 
         private LineRenderer lineRenderer;
 
+        private Spline runtimeSpline;
+
+        private float splineLength;
         private float traveledDistance;
 
         private void Awake()
@@ -47,23 +50,11 @@ namespace PolarGeometry
 
         private void Update()
         {
-            if (splineContainer == null)
+            if (!IsValidSpline(runtimeSpline))
             {
                 lineRenderer.positionCount = 0;
                 return;
             }
-
-            Spline spline =
-                splineContainer.Spline;
-
-            if (!IsValidSpline(spline))
-            {
-                lineRenderer.positionCount = 0;
-                return;
-            }
-
-            float splineLength =
-                splineContainer.CalculateLength();
 
             if (splineLength <= 0f)
             {
@@ -80,11 +71,12 @@ namespace PolarGeometry
                     splineLength
                 );
 
-            if (loop && spline.Closed)
+            if (loop && runtimeSpline.Closed)
             {
                 if (
                     traveledDistance >
-                    splineLength + effectiveLineLength
+                    splineLength +
+                    effectiveLineLength
                 )
                 {
                     traveledDistance =
@@ -106,8 +98,6 @@ namespace PolarGeometry
             }
 
             DrawSnake(
-                spline,
-                splineLength,
                 effectiveLineLength
             );
         }
@@ -118,25 +108,38 @@ namespace PolarGeometry
 
             if (splineContainer == null)
             {
+                runtimeSpline = null;
+                splineLength = 0f;
+
                 lineRenderer.positionCount = 0;
                 return;
             }
 
-            Spline spline =
+            Spline sourceSpline =
                 splineContainer.Spline;
 
-            if (!IsValidSpline(spline))
+            if (!IsValidSpline(sourceSpline))
+            {
+                runtimeSpline = null;
+                splineLength = 0f;
+
+                lineRenderer.positionCount = 0;
+                return;
+            }
+
+            runtimeSpline =
+                new Spline(sourceSpline);
+
+            splineLength =
+                runtimeSpline.GetLength();
+
+            if (splineLength <= 0f)
             {
                 lineRenderer.positionCount = 0;
                 return;
             }
 
-            float splineLength =
-                splineContainer.CalculateLength();
-
             DrawSnake(
-                spline,
-                splineLength,
                 Mathf.Min(
                     lineLength,
                     splineLength
@@ -145,8 +148,6 @@ namespace PolarGeometry
         }
 
         private void DrawSnake(
-            Spline spline,
-            float splineLength,
             float effectiveLineLength)
         {
             float headDistance =
@@ -165,11 +166,7 @@ namespace PolarGeometry
 
             if (visibleLength <= 0f)
             {
-                SetSinglePosition(
-                    spline,
-                    0f
-                );
-
+                SetSinglePosition(0f);
                 return;
             }
 
@@ -201,7 +198,10 @@ namespace PolarGeometry
                         ratio
                     );
 
-                if (loop && spline.Closed)
+                if (
+                    loop &&
+                    runtimeSpline.Closed
+                )
                 {
                     distance =
                         Mathf.Repeat(
@@ -219,24 +219,9 @@ namespace PolarGeometry
                         );
                 }
 
-                float t =
-                    SplineUtility.GetNormalizedInterpolation(
-                        spline,
-                        distance,
-                        PathIndexUnit.Distance
-                    );
-
-                float3 position =
-                    splineContainer.EvaluatePosition(
-                        spline,
-                        t
-                    );
-
                 positions[i] =
-                    new Vector3(
-                        position.x,
-                        position.y,
-                        position.z
+                    EvaluateWorldPosition(
+                        distance
                     );
             }
 
@@ -249,30 +234,36 @@ namespace PolarGeometry
         }
 
         private void SetSinglePosition(
-            Spline spline,
             float distance)
         {
-            float t =
-                SplineUtility.GetNormalizedInterpolation(
-                    spline,
-                    distance,
-                    PathIndexUnit.Distance
-                );
-
-            float3 position =
-                splineContainer.EvaluatePosition(
-                    spline,
-                    t
-                );
-
             lineRenderer.positionCount = 1;
 
             lineRenderer.SetPosition(
                 0,
+                EvaluateWorldPosition(
+                    distance
+                )
+            );
+        }
+
+        private Vector3 EvaluateWorldPosition(
+            float distance)
+        {
+            float t =
+                SplineUtility.GetNormalizedInterpolation(
+                    runtimeSpline,
+                    distance,
+                    PathIndexUnit.Distance
+                );
+
+            float3 localPosition =
+                runtimeSpline.EvaluatePosition(t);
+
+            return splineContainer.transform.TransformPoint(
                 new Vector3(
-                    position.x,
-                    position.y,
-                    position.z
+                    localPosition.x,
+                    localPosition.y,
+                    localPosition.z
                 )
             );
         }

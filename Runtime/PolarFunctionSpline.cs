@@ -47,6 +47,10 @@ namespace PolarGeometry
         [SerializeField]
         private TangentMode tangentMode = TangentMode.Linear;
 
+        [Header("Update")]
+        [SerializeField]
+        private bool autoUpdate = true;
+
         private SplineContainer splineContainer;
 
         private void Awake()
@@ -216,6 +220,32 @@ namespace PolarGeometry
             spline.Closed = loop;
 
             return spline;
+        }
+
+        private void OnEnable()
+        {
+            SubscribeFunction();
+        }
+
+        private void OnDisable()
+        {
+            UnsubscribeFunction();
+        }
+
+        private void SubscribeFunction()
+        {
+            if (function != null && autoUpdate)
+            {
+                function.Changed += Generate;
+            }
+        }
+
+        private void UnsubscribeFunction()
+        {
+            if (function != null)
+            {
+                function.Changed -= Generate;
+            }
         }
     }
 }

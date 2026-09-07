@@ -21,6 +21,8 @@ namespace PolarGeometry.Editor
         private SerializedProperty loop;
         private SerializedProperty tangentMode;
 
+        private SerializedProperty autoUpdate;
+
         private void OnEnable()
         {
             function =
@@ -58,6 +60,9 @@ namespace PolarGeometry.Editor
 
             tangentMode =
                 serializedObject.FindProperty("tangentMode");
+
+            autoUpdate =
+                serializedObject.FindProperty("autoUpdate");
         }
 
         public override void OnInspectorGUI()
@@ -126,6 +131,12 @@ namespace PolarGeometry.Editor
                     tangentMode
                 );
             }
+
+            EditorGUILayout.Space();
+
+            EditorGUILayout.PropertyField(
+                autoUpdate
+            );
 
             serializedObject.ApplyModifiedProperties();
         }
