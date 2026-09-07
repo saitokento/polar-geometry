@@ -1,10 +1,16 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace PolarGeometry
 {
     public class PolarFunctionSpawner : MonoBehaviour
     {
+        public enum SpawnMode
+        {
+            Immediate,
+            Progressive
+        }
+
         [SerializeField]
         private PolarFunction function;
 
@@ -26,11 +32,20 @@ namespace PolarGeometry
         private Transform spawnParent;
 
         [SerializeField]
+        private SpawnMode spawnMode =
+            SpawnMode.Immediate;
+
+        [SerializeField]
         [Min(0.0001f)]
         private float deltaThetaDegrees = 10f;
 
         [SerializeField]
         private bool alignToPath = false;
+
+        [Header("Progressive")]
+        [SerializeField]
+        [Min(0f)]
+        private float angularSpeedDegreesPerSecond = 90f;
 
         [Header("Update")]
         [SerializeField]
@@ -38,6 +53,18 @@ namespace PolarGeometry
 
         private readonly List<GameObject> spawnedObjects =
             new List<GameObject>();
+
+        private float startTheta;
+        private float endTheta;
+        private float thetaRange;
+        private float thetaDirection;
+        private float deltaTheta;
+
+        private float thetaProgress;
+        private int nextSpawnIndex;
+        private int spawnCount;
+
+        private bool spawning;
 
         private void Awake()
         {
@@ -53,10 +80,54 @@ namespace PolarGeometry
             Spawn();
         }
 
+        private void Update()
+        {
+            if (!spawning)
+                return;
+
+            UpdateProgressiveSpawn(
+                Time.deltaTime
+            );
+        }
+
         public void Spawn()
         {
             Clear();
 
+            if (!InitializeSpawn())
+                return;
+
+            if (spawnMode == SpawnMode.Immediate)
+            {
+                SpawnImmediate();
+            }
+            else
+            {
+                StartProgressiveSpawn();
+            }
+        }
+
+        public void Clear()
+        {
+            spawning = false;
+
+            for (int i = 0;
+                i < spawnedObjects.Count;
+                i++)
+            {
+                if (spawnedObjects[i] != null)
+                {
+                    Destroy(
+                        spawnedObjects[i]
+                    );
+                }
+            }
+
+            spawnedObjects.Clear();
+        }
+
+        private bool InitializeSpawn()
+        {
             if (function == null)
             {
                 Debug.LogError(
@@ -64,7 +135,7 @@ namespace PolarGeometry
                     this
                 );
 
-                return;
+                return false;
             }
 
             if (prefab == null)
@@ -74,10 +145,10 @@ namespace PolarGeometry
                     this
                 );
 
-                return;
+                return false;
             }
 
-            float deltaTheta =
+            deltaTheta =
                 deltaThetaDegrees * Mathf.Deg2Rad;
 
             if (deltaTheta <= 0f)
@@ -87,13 +158,11 @@ namespace PolarGeometry
                     this
                 );
 
-                return;
+                return false;
             }
 
-            float startTheta =
+            startTheta =
                 startThetaDegrees * Mathf.Deg2Rad;
-
-            float endTheta;
 
             if (useFunctionThetaSpan)
             {
@@ -104,7 +173,7 @@ namespace PolarGeometry
                         this
                     );
 
-                    return;
+                    return false;
                 }
 
                 endTheta =
@@ -119,66 +188,116 @@ namespace PolarGeometry
             float range =
                 endTheta - startTheta;
 
-            if (range == 0f)
-            {
-                SpawnAtTheta(
-                    startTheta,
-                    startTheta,
-                    endTheta,
-                    deltaTheta
-                );
-
-                return;
-            }
-
-            float direction =
-                Mathf.Sign(range);
-
-            float rangeLength =
+            thetaRange =
                 Mathf.Abs(range);
 
-            int count =
-                Mathf.CeilToInt(
-                    rangeLength / deltaTheta
-                );
+            thetaDirection =
+                Mathf.Sign(range);
 
-            for (int i = 0; i < count; i++)
+            if (thetaRange == 0f)
+            {
+                spawnCount = 1;
+            }
+            else
+            {
+                spawnCount =
+                    Mathf.CeilToInt(
+                        thetaRange /
+                        deltaTheta
+                    );
+            }
+
+            return true;
+        }
+
+        private void SpawnImmediate()
+        {
+            for (int i = 0;
+                i < spawnCount;
+                i++)
             {
                 float theta =
-                    startTheta +
-                    direction *
-                    deltaTheta *
-                    i;
+                    GetThetaAtIndex(i);
 
-                SpawnAtTheta(
-                    theta,
-                    startTheta,
-                    endTheta,
-                    deltaTheta
-                );
+                SpawnAtTheta(theta);
             }
         }
 
-        public void Clear()
+        private void StartProgressiveSpawn()
         {
-            for (int i = 0; i < spawnedObjects.Count; i++)
+            thetaProgress = 0f;
+            nextSpawnIndex = 0;
+
+            if (spawnCount <= 0)
+                return;
+
+            // 始点は開始直後に生成する。
+            SpawnAtTheta(
+                GetThetaAtIndex(0)
+            );
+
+            nextSpawnIndex = 1;
+
+            spawning =
+                nextSpawnIndex < spawnCount;
+        }
+
+        private void UpdateProgressiveSpawn(
+            float deltaTime)
+        {
+            float angularSpeed =
+                angularSpeedDegreesPerSecond *
+                Mathf.Deg2Rad;
+
+            if (angularSpeed <= 0f)
+                return;
+
+            thetaProgress +=
+                angularSpeed * deltaTime;
+
+            thetaProgress =
+                Mathf.Min(
+                    thetaProgress,
+                    thetaRange
+                );
+
+            // 1フレームで複数の生成地点を
+            // 通過する可能性があるのでwhile。
+            while (
+                nextSpawnIndex < spawnCount &&
+                nextSpawnIndex * deltaTheta
+                    <= thetaProgress
+            )
             {
-                if (spawnedObjects[i] != null)
-                {
-                    Destroy(
-                        spawnedObjects[i]
-                    );
-                }
+                SpawnAtTheta(
+                    GetThetaAtIndex(
+                        nextSpawnIndex
+                    )
+                );
+
+                nextSpawnIndex++;
             }
 
-            spawnedObjects.Clear();
+            if (nextSpawnIndex >= spawnCount)
+            {
+                spawning = false;
+            }
+        }
+
+        private float GetThetaAtIndex(
+            int index)
+        {
+            if (thetaRange == 0f)
+                return startTheta;
+
+            return startTheta +
+                thetaDirection *
+                deltaTheta *
+                index;
         }
 
         private void SpawnAtTheta(
-            float theta,
-            float startTheta,
-            float endTheta,
-            float deltaTheta)
+            float theta)
         {
             Vector2 position =
                 EvaluatePosition(theta);
@@ -205,12 +324,7 @@ namespace PolarGeometry
             if (alignToPath)
             {
                 Vector2 tangent =
-                    EvaluateTangent(
-                        theta,
-                        startTheta,
-                        endTheta,
-                        deltaTheta
-                    );
+                    EvaluateTangent(theta);
 
                 if (tangent.sqrMagnitude > 0f)
                 {
@@ -245,17 +359,9 @@ namespace PolarGeometry
         }
 
         private Vector2 EvaluateTangent(
-            float theta,
-            float startTheta,
-            float endTheta,
-            float deltaTheta)
+            float theta)
         {
-            float direction =
-                Mathf.Sign(
-                    endTheta - startTheta
-                );
-
-            if (direction == 0f)
+            if (thetaDirection == 0f)
                 return Vector2.zero;
 
             float tangentDeltaTheta =
@@ -279,7 +385,7 @@ namespace PolarGeometry
             float thetaBefore =
                 Mathf.Clamp(
                     theta -
-                    direction *
+                    thetaDirection *
                     tangentDeltaTheta,
                     minTheta,
                     maxTheta
@@ -288,7 +394,7 @@ namespace PolarGeometry
             float thetaAfter =
                 Mathf.Clamp(
                     theta +
-                    direction *
+                    thetaDirection *
                     tangentDeltaTheta,
                     minTheta,
                     maxTheta
@@ -315,9 +421,11 @@ namespace PolarGeometry
 
         private void SubscribeFunction()
         {
-            if (function != null && autoUpdate)
+            if (function != null &&
+                autoUpdate)
             {
-                function.Changed += Spawn;
+                function.Changed +=
+                    OnFunctionChanged;
             }
         }
 
@@ -325,8 +433,14 @@ namespace PolarGeometry
         {
             if (function != null)
             {
-                function.Changed -= Spawn;
+                function.Changed -=
+                    OnFunctionChanged;
             }
+        }
+
+        private void OnFunctionChanged()
+        {
+            Spawn();
         }
     }
 }

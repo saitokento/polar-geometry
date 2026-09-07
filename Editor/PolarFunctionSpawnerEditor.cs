@@ -1,4 +1,4 @@
-using UnityEditor;
+﻿using UnityEditor;
 
 namespace PolarGeometry.Editor
 {
@@ -14,8 +14,13 @@ namespace PolarGeometry.Editor
 
         private SerializedProperty prefab;
         private SerializedProperty spawnParent;
+
+        private SerializedProperty spawnMode;
+
         private SerializedProperty deltaThetaDegrees;
         private SerializedProperty alignToPath;
+
+        private SerializedProperty angularSpeedDegreesPerSecond;
 
         private SerializedProperty autoUpdate;
 
@@ -45,6 +50,11 @@ namespace PolarGeometry.Editor
             spawnParent =
                 serializedObject.FindProperty("spawnParent");
 
+            spawnMode =
+                serializedObject.FindProperty(
+                    "spawnMode"
+                );
+
             deltaThetaDegrees =
                 serializedObject.FindProperty(
                     "deltaThetaDegrees"
@@ -53,6 +63,11 @@ namespace PolarGeometry.Editor
             alignToPath =
                 serializedObject.FindProperty(
                     "alignToPath"
+                );
+
+            angularSpeedDegreesPerSecond =
+                serializedObject.FindProperty(
+                    "angularSpeedDegreesPerSecond"
                 );
 
             autoUpdate =
@@ -91,12 +106,26 @@ namespace PolarGeometry.Editor
             );
 
             EditorGUILayout.PropertyField(
+                spawnMode
+            );
+
+            EditorGUILayout.PropertyField(
                 deltaThetaDegrees
             );
 
             EditorGUILayout.PropertyField(
                 alignToPath
             );
+
+            if (
+                spawnMode.enumValueIndex ==
+                (int)PolarFunctionSpawner.SpawnMode.Progressive
+            )
+            {
+                EditorGUILayout.PropertyField(
+                    angularSpeedDegreesPerSecond
+                );
+            }
 
             EditorGUILayout.Space();
 
