@@ -1,3 +1,4 @@
+﻿using System;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Splines;
@@ -27,20 +28,37 @@ namespace PolarGeometry
         [Min(0.0001f)]
         private float sampleDistance = 0.05f;
 
-        private LineRenderer lineRenderer;
+        [Header("Collider")]
+        [SerializeField]
+        private bool enableCollider = false;
 
+        [SerializeField]
+        private bool matchLineRendererWidth = true;
+
+        private LineRenderer lineRenderer;
+        private EdgeCollider2D edgeCollider;
+
+        // 開始時に取得したSplineのコピー。
+        // 元のSplineContainer.Splineが変更されても追従しない。
         private Spline runtimeSpline;
 
         private float splineLength;
         private float traveledDistance;
+
+        private bool missingColliderWarningLogged;
 
         private void Awake()
         {
             lineRenderer =
                 GetComponent<LineRenderer>();
 
+            edgeCollider =
+                GetComponent<EdgeCollider2D>();
+
             lineRenderer.useWorldSpace = true;
             lineRenderer.loop = false;
+
+            UpdateColliderState();
         }
 
         private void Start()
@@ -50,15 +68,30 @@ namespace PolarGeometry
 
         private void Update()
         {
+            UpdateColliderState();
+
+            // Start時点ではPolarFunctionSplineが
+            // まだ生成されていない可能性がある。
+            // 有効なSplineを取得できるまで待つ。
             if (!IsValidSpline(runtimeSpline))
             {
-                lineRenderer.positionCount = 0;
-                return;
+                if (!TryInitializeRuntimeSpline())
+                {
+                    ClearOutput();
+                    return;
+                }
+
+                DrawSnake(
+                    Mathf.Min(
+                        lineLength,
+                        splineLength
+                    )
+                );
             }
 
             if (splineLength <= 0f)
             {
-                lineRenderer.positionCount = 0;
+                ClearOutput();
                 return;
             }
 
@@ -105,28 +138,37 @@ namespace PolarGeometry
         public void Restart()
         {
             traveledDistance = 0f;
+            runtimeSpline = null;
+            splineLength = 0f;
 
-            if (splineContainer == null)
-            {
-                runtimeSpline = null;
-                splineLength = 0f;
+            ClearOutput();
 
-                lineRenderer.positionCount = 0;
+            // ここで取得できなくても、
+            // Update()で取得可能になるまで再試行する。
+            if (!TryInitializeRuntimeSpline())
                 return;
-            }
+
+            DrawSnake(
+                Mathf.Min(
+                    lineLength,
+                    splineLength
+                )
+            );
+        }
+
+        private bool TryInitializeRuntimeSpline()
+        {
+            if (splineContainer == null)
+                return false;
 
             Spline sourceSpline =
                 splineContainer.Spline;
 
             if (!IsValidSpline(sourceSpline))
-            {
-                runtimeSpline = null;
-                splineLength = 0f;
+                return false;
 
-                lineRenderer.positionCount = 0;
-                return;
-            }
-
+            // 現在のSplineをコピーする。
+            // 以降のPolarFunctionSplineの変更には追従しない。
             runtimeSpline =
                 new Spline(sourceSpline);
 
@@ -135,16 +177,15 @@ namespace PolarGeometry
 
             if (splineLength <= 0f)
             {
-                lineRenderer.positionCount = 0;
-                return;
+                runtimeSpline = null;
+                splineLength = 0f;
+
+                return false;
             }
 
-            DrawSnake(
-                Mathf.Min(
-                    lineLength,
-                    splineLength
-                )
-            );
+            traveledDistance = 0f;
+
+            return true;
         }
 
         private void DrawSnake(
@@ -185,7 +226,10 @@ namespace PolarGeometry
             Vector3[] positions =
                 new Vector3[positionCount];
 
-            for (int i = 0; i < positionCount; i++)
+            for (
+                int i = 0;
+                i < positionCount;
+                i++)
             {
                 float ratio =
                     (float)i /
@@ -231,6 +275,10 @@ namespace PolarGeometry
             lineRenderer.SetPositions(
                 positions
             );
+
+            UpdateCollider(
+                positions
+            );
         }
 
         private void SetSinglePosition(
@@ -244,6 +292,9 @@ namespace PolarGeometry
                     distance
                 )
             );
+
+            // EdgeCollider2Dは2点以上必要。
+            ClearColliderPoints();
         }
 
         private Vector3 EvaluateWorldPosition(
@@ -266,6 +317,113 @@ namespace PolarGeometry
                     localPosition.z
                 )
             );
+        }
+
+        private void UpdateCollider(
+            Vector3[] worldPositions)
+        {
+            if (!enableCollider)
+            {
+                ClearColliderPoints();
+                return;
+            }
+
+            if (edgeCollider == null)
+            {
+                WarnMissingCollider();
+                return;
+            }
+
+            if (worldPositions.Length < 2)
+            {
+                ClearColliderPoints();
+                return;
+            }
+
+            Vector2[] colliderPoints =
+                new Vector2[
+                    worldPositions.Length
+                ];
+
+            for (
+                int i = 0;
+                i < worldPositions.Length;
+                i++)
+            {
+                // LineRendererはworld spaceなので、
+                // EdgeCollider2D用にこのGameObjectの
+                // local spaceへ変換する。
+                Vector3 localPosition =
+                    transform.InverseTransformPoint(
+                        worldPositions[i]
+                    );
+
+                colliderPoints[i] =
+                    new Vector2(
+                        localPosition.x,
+                        localPosition.y
+                    );
+            }
+
+            edgeCollider.points =
+                colliderPoints;
+
+            if (matchLineRendererWidth)
+            {
+                edgeCollider.edgeRadius =
+                    lineRenderer.widthMultiplier *
+                    0.5f;
+            }
+        }
+
+        private void UpdateColliderState()
+        {
+            if (edgeCollider == null)
+            {
+                if (enableCollider)
+                {
+                    WarnMissingCollider();
+                }
+
+                return;
+            }
+
+            edgeCollider.enabled =
+                enableCollider;
+
+            if (!enableCollider)
+            {
+                ClearColliderPoints();
+            }
+        }
+
+        private void ClearOutput()
+        {
+            lineRenderer.positionCount = 0;
+
+            ClearColliderPoints();
+        }
+
+        private void ClearColliderPoints()
+        {
+            if (edgeCollider == null)
+                return;
+
+            edgeCollider.points =
+                Array.Empty<Vector2>();
+        }
+
+        private void WarnMissingCollider()
+        {
+            if (missingColliderWarningLogged)
+                return;
+
+            Debug.LogWarning(
+                "Enable Collider is enabled, but EdgeCollider2D is not attached.",
+                this
+            );
+
+            missingColliderWarningLogged = true;
         }
 
         private static bool IsValidSpline(
