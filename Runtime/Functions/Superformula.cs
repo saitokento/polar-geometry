@@ -463,5 +463,11 @@ namespace PolarGeometry
 
             return left;
         }
+
+        public void Refresh()
+        {
+            NotifyChanged();
+        }
+
     }
 }
