@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace PolarGeometry
 {
@@ -179,16 +180,142 @@ namespace PolarGeometry
             return (float)span;
         }
 
+        public List<Vector2> SamplePositionsAdaptiveWithCriticalAngles(
+            float startTheta,
+            float endTheta,
+            float maxCoordinateDelta,
+            float maxDeltaTheta,
+            bool includeEnd,
+            int maxDepth,
+            float tolerance)
+        {
+            if (m == 0f ||
+                float.IsNaN(m) ||
+                float.IsInfinity(m) ||
+                endTheta <= startTheta)
+            {
+                return this.SamplePositionsAdaptive(
+                    startTheta,
+                    endTheta,
+                    maxCoordinateDelta,
+                    maxDeltaTheta,
+                    includeEnd,
+                    maxDepth,
+                    tolerance
+                );
+            }
+
+            // Both sets of zeros form one sequence:
+            // theta = 2πk / |m|.
+            double criticalStep =
+                2.0 * System.Math.PI /
+                System.Math.Abs((double)m);
+
+            long firstIndex =
+                (long)System.Math.Floor(
+                    startTheta / criticalStep
+                ) + 1L;
+
+            List<Vector2> positions =
+                new List<Vector2>();
+
+            float segmentStart =
+                startTheta;
+
+            for (long index = firstIndex; ; index++)
+            {
+                double criticalThetaDouble =
+                    index * criticalStep;
+
+                if (criticalThetaDouble >= endTheta)
+                    break;
+
+                float criticalTheta =
+                    (float)criticalThetaDouble;
+
+                if (criticalTheta <= segmentStart)
+                    continue;
+
+                List<Vector2> segment =
+                    this.SamplePositionsAdaptive(
+                        segmentStart,
+                        criticalTheta,
+                        maxCoordinateDelta,
+                        maxDeltaTheta,
+                        true,
+                        maxDepth,
+                        tolerance
+                    );
+
+                AppendWithoutDuplicateStart(
+                    positions,
+                    segment
+                );
+
+                segmentStart =
+                    criticalTheta;
+
+                if (index == long.MaxValue)
+                    break;
+            }
+
+            List<Vector2> finalSegment =
+                this.SamplePositionsAdaptive(
+                    segmentStart,
+                    endTheta,
+                    maxCoordinateDelta,
+                    maxDeltaTheta,
+                    includeEnd,
+                    maxDepth,
+                    tolerance
+                );
+
+            AppendWithoutDuplicateStart(
+                positions,
+                finalSegment
+            );
+
+            return positions;
+        }
+
+        private static void AppendWithoutDuplicateStart(
+            List<Vector2> destination,
+            List<Vector2> source)
+        {
+            int startIndex =
+                destination.Count > 0 &&
+                source.Count > 0
+                    ? 1
+                    : 0;
+
+            for (int i = startIndex; i < source.Count; i++)
+            {
+                destination.Add(
+                    source[i]
+                );
+            }
+        }
+
         public override float Evaluate(
             float theta)
         {
             float angle =
                 m * theta * 0.25f;
 
+            float cosValue =
+                SnapTrigonometricZero(
+                    Mathf.Cos(angle)
+                );
+
+            float sinValue =
+                SnapTrigonometricZero(
+                    Mathf.Sin(angle)
+                );
+
             float cosTerm =
                 Mathf.Pow(
                     Mathf.Abs(
-                        Mathf.Cos(angle) /
+                        cosValue /
                         a
                     ),
                     n2
@@ -197,7 +324,7 @@ namespace PolarGeometry
             float sinTerm =
                 Mathf.Pow(
                     Mathf.Abs(
-                        Mathf.Sin(angle) /
+                        sinValue /
                         b
                     ),
                     n3
@@ -207,6 +334,17 @@ namespace PolarGeometry
                 cosTerm + sinTerm,
                 -1f / n1
             );
+        }
+
+        private static float SnapTrigonometricZero(
+            float value)
+        {
+            const float zeroTolerance =
+                0.000001f;
+
+            return Mathf.Abs(value) < zeroTolerance
+                ? 0f
+                : value;
         }
 
         public void SetParameters(

@@ -155,16 +155,32 @@ namespace PolarGeometry
                 float maxDeltaTheta =
                     maxDeltaThetaDegrees * Mathf.Deg2Rad;
 
-                positions =
-                    function.SamplePositionsAdaptive(
-                        startTheta,
-                        endTheta,
-                        maxCoordinateDelta,
-                        maxDeltaTheta,
-                        includeEnd,
-                        maxDepth,
-                        tolerance
-                    );
+                if (function is Superformula superformula)
+                {
+                    positions =
+                        superformula.SamplePositionsAdaptiveWithCriticalAngles(
+                            startTheta,
+                            endTheta,
+                            maxCoordinateDelta,
+                            maxDeltaTheta,
+                            includeEnd,
+                            maxDepth,
+                            tolerance
+                        );
+                }
+                else
+                {
+                    positions =
+                        function.SamplePositionsAdaptive(
+                            startTheta,
+                            endTheta,
+                            maxCoordinateDelta,
+                            maxDeltaTheta,
+                            includeEnd,
+                            maxDepth,
+                            tolerance
+                        );
+                }
             }
             else
             {

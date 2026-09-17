@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace PolarGeometry
@@ -110,16 +110,32 @@ namespace PolarGeometry
                 float maxDeltaTheta =
                     maxDeltaThetaDegrees * Mathf.Deg2Rad;
 
-                sampledPositions =
-                    function.SamplePositionsAdaptive(
-                        startTheta,
-                        endTheta,
-                        maxCoordinateDelta,
-                        maxDeltaTheta,
-                        includeEnd,
-                        maxDepth,
-                        tolerance
-                    );
+                if (function is Superformula superformula)
+                {
+                    sampledPositions =
+                        superformula.SamplePositionsAdaptiveWithCriticalAngles(
+                            startTheta,
+                            endTheta,
+                            maxCoordinateDelta,
+                            maxDeltaTheta,
+                            includeEnd,
+                            maxDepth,
+                            tolerance
+                        );
+                }
+                else
+                {
+                    sampledPositions =
+                        function.SamplePositionsAdaptive(
+                            startTheta,
+                            endTheta,
+                            maxCoordinateDelta,
+                            maxDeltaTheta,
+                            includeEnd,
+                            maxDepth,
+                            tolerance
+                        );
+                }
             }
             else
             {
