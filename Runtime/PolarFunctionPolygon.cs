@@ -12,7 +12,7 @@ namespace PolarGeometry
 
         [Header("Range")]
         [SerializeField]
-        private bool useFunctionThetaSpan = false;
+        private bool useFunctionThetaSpan = true;
 
         [SerializeField]
         private float startThetaDegrees = 0f;
@@ -22,7 +22,7 @@ namespace PolarGeometry
 
         [Header("Sampling")]
         [SerializeField]
-        private bool useAdaptiveSampling = false;
+        private bool useAdaptiveSampling = true;
 
         [SerializeField]
         private float deltaThetaDegrees = 1f;
@@ -37,7 +37,7 @@ namespace PolarGeometry
         private int maxDepth = 16;
 
         [SerializeField]
-        private float tolerance = 0f;
+        private float tolerance = 0.01f;
 
         [Header("Output")]
         [SerializeField]

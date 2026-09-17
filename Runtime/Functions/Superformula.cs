@@ -16,7 +16,7 @@ namespace PolarGeometry
         private float b = 1f;
 
         [SerializeField]
-        private float m = 6f;
+        private float m = 4f;
 
         [SerializeField]
         private float n1 = 1f;
@@ -84,110 +84,36 @@ namespace PolarGeometry
         public override float? ThetaSpan =>
             GetMinimumClosureSpan();
 
-        public float? GetMinimumClosureSpan(
-            int maxDenominator = 10000,
-            float tolerance = 0.000001f)
+        private float GetMinimumClosureSpan()
         {
-            if (maxDenominator < 1)
-                return null;
+            int integerM = Mathf.RoundToInt(m);
 
-            if (tolerance < 0f ||
-                float.IsNaN(tolerance) ||
-                float.IsInfinity(tolerance))
-                return null;
-
-            if (m == 0f)
-                return Mathf.PI * 2f;
-
-            long numerator;
-            long denominator;
-
-            if (!TryGetRational(
-                Mathf.Abs(m),
-                maxDenominator,
-                tolerance,
-                out numerator,
-                out denominator))
-                return null;
-
-            return GetClosureSpan(
-                numerator,
-                denominator
-            );
-        }
-
-        public float? GetMinimumClosureSpanForRationalM(
-            long numerator,
-            long denominator)
-        {
-            if (denominator == 0L ||
-                numerator == long.MinValue ||
-                denominator == long.MinValue)
-                return null;
-
-            numerator = System.Math.Abs(numerator);
-            denominator = System.Math.Abs(denominator);
-
-            if (numerator == 0L)
-                return Mathf.PI * 2f;
-
-            long divisor =
-                GreatestCommonDivisor(
-                    numerator,
-                    denominator
+            bool hasQuarterTurnSymmetry =
+                Mathf.Approximately(n2, n3) &&
+                (
+                    Mathf.Approximately(n2, 0f) ||
+                    Mathf.Approximately(
+                        Mathf.Abs(a),
+                        Mathf.Abs(b)
+                    )
                 );
 
-            return GetClosureSpan(
-                numerator / divisor,
-                denominator / divisor
-            );
-        }
-
-        private float? GetClosureSpan(
-            long numerator,
-            long denominator)
-        {
-
-            bool hasHalfPeriod =
-                a == b &&
-                n2 == n3;
-
-            double span;
-
-            if (hasHalfPeriod)
+            if (hasQuarterTurnSymmetry ||
+                integerM % 2 == 0)
             {
-                span =
-                    2.0 * Mathf.PI *
-                    denominator;
-            }
-            else
-            {
-                long parityDivisor =
-                    GreatestCommonDivisor(
-                        numerator,
-                        2L
-                    );
-
-                span =
-                    4.0 * Mathf.PI *
-                    denominator /
-                    parityDivisor;
+                return 2f * Mathf.PI;
             }
 
-            if (span > float.MaxValue)
-                return null;
-
-            return (float)span;
+            return 4f * Mathf.PI;
         }
-
         public List<Vector2> SamplePositionsAdaptiveWithCriticalAngles(
-            float startTheta,
-            float endTheta,
-            float maxCoordinateDelta,
-            float maxDeltaTheta,
-            bool includeEnd,
-            int maxDepth,
-            float tolerance)
+                    float startTheta,
+                    float endTheta,
+                    float maxCoordinateDelta,
+                    float maxDeltaTheta,
+                    bool includeEnd,
+                    int maxDepth,
+                    float tolerance)
         {
             if (m == 0f ||
                 float.IsNaN(m) ||
@@ -205,8 +131,6 @@ namespace PolarGeometry
                 );
             }
 
-            // Both sets of zeros form one sequence:
-            // theta = 2πk / |m|.
             double criticalStep =
                 2.0 * System.Math.PI /
                 System.Math.Abs((double)m);
@@ -388,86 +312,9 @@ namespace PolarGeometry
             NotifyChanged();
         }
 
-        private static bool TryGetRational(
-            float value,
-            int maxDenominator,
-            float tolerance,
-            out long numerator,
-            out long denominator)
-        {
-            numerator = 0L;
-            denominator = 0L;
-
-            if (float.IsNaN(value) ||
-                float.IsInfinity(value))
-                return false;
-
-            double target = value;
-
-            for (long candidateDenominator = 1L;
-                candidateDenominator <= maxDenominator;
-                candidateDenominator++)
-            {
-                double scaled =
-                    target * candidateDenominator;
-
-                if (scaled > long.MaxValue)
-                    return false;
-
-                long candidateNumerator =
-                    (long)System.Math.Round(scaled);
-
-                if (candidateNumerator == 0L)
-                    continue;
-
-                double error =
-                    System.Math.Abs(
-                        target -
-                        (double)candidateNumerator /
-                        candidateDenominator
-                    );
-
-                if (error > tolerance)
-                    continue;
-
-                long divisor =
-                    GreatestCommonDivisor(
-                        candidateNumerator,
-                        candidateDenominator
-                    );
-
-                numerator =
-                    candidateNumerator / divisor;
-
-                denominator =
-                    candidateDenominator / divisor;
-
-                return true;
-            }
-
-            return false;
-        }
-
-        private static long GreatestCommonDivisor(
-            long left,
-            long right)
-        {
-            while (right != 0L)
-            {
-                long remainder =
-                    left % right;
-
-                left = right;
-                right = remainder;
-            }
-
-            return left;
-        }
-
         public void Refresh()
         {
             NotifyChanged();
         }
-
     }
 }
