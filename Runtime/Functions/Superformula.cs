@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace PolarGeometry
 {
@@ -81,7 +81,103 @@ namespace PolarGeometry
         }
 
         public override float? ThetaSpan =>
-            Mathf.PI * 2f;
+            GetMinimumClosureSpan();
+
+        public float? GetMinimumClosureSpan(
+            int maxDenominator = 10000,
+            float tolerance = 0.000001f)
+        {
+            if (maxDenominator < 1)
+                return null;
+
+            if (tolerance < 0f ||
+                float.IsNaN(tolerance) ||
+                float.IsInfinity(tolerance))
+                return null;
+
+            if (m == 0f)
+                return Mathf.PI * 2f;
+
+            long numerator;
+            long denominator;
+
+            if (!TryGetRational(
+                Mathf.Abs(m),
+                maxDenominator,
+                tolerance,
+                out numerator,
+                out denominator))
+                return null;
+
+            return GetClosureSpan(
+                numerator,
+                denominator
+            );
+        }
+
+        public float? GetMinimumClosureSpanForRationalM(
+            long numerator,
+            long denominator)
+        {
+            if (denominator == 0L ||
+                numerator == long.MinValue ||
+                denominator == long.MinValue)
+                return null;
+
+            numerator = System.Math.Abs(numerator);
+            denominator = System.Math.Abs(denominator);
+
+            if (numerator == 0L)
+                return Mathf.PI * 2f;
+
+            long divisor =
+                GreatestCommonDivisor(
+                    numerator,
+                    denominator
+                );
+
+            return GetClosureSpan(
+                numerator / divisor,
+                denominator / divisor
+            );
+        }
+
+        private float? GetClosureSpan(
+            long numerator,
+            long denominator)
+        {
+
+            bool hasHalfPeriod =
+                a == b &&
+                n2 == n3;
+
+            double span;
+
+            if (hasHalfPeriod)
+            {
+                span =
+                    2.0 * Mathf.PI *
+                    denominator;
+            }
+            else
+            {
+                long parityDivisor =
+                    GreatestCommonDivisor(
+                        numerator,
+                        2L
+                    );
+
+                span =
+                    4.0 * Mathf.PI *
+                    denominator /
+                    parityDivisor;
+            }
+
+            if (span > float.MaxValue)
+                return null;
+
+            return (float)span;
+        }
 
         public override float Evaluate(
             float theta)
@@ -152,6 +248,82 @@ namespace PolarGeometry
             field = value;
 
             NotifyChanged();
+        }
+
+        private static bool TryGetRational(
+            float value,
+            int maxDenominator,
+            float tolerance,
+            out long numerator,
+            out long denominator)
+        {
+            numerator = 0L;
+            denominator = 0L;
+
+            if (float.IsNaN(value) ||
+                float.IsInfinity(value))
+                return false;
+
+            double target = value;
+
+            for (long candidateDenominator = 1L;
+                candidateDenominator <= maxDenominator;
+                candidateDenominator++)
+            {
+                double scaled =
+                    target * candidateDenominator;
+
+                if (scaled > long.MaxValue)
+                    return false;
+
+                long candidateNumerator =
+                    (long)System.Math.Round(scaled);
+
+                if (candidateNumerator == 0L)
+                    continue;
+
+                double error =
+                    System.Math.Abs(
+                        target -
+                        (double)candidateNumerator /
+                        candidateDenominator
+                    );
+
+                if (error > tolerance)
+                    continue;
+
+                long divisor =
+                    GreatestCommonDivisor(
+                        candidateNumerator,
+                        candidateDenominator
+                    );
+
+                numerator =
+                    candidateNumerator / divisor;
+
+                denominator =
+                    candidateDenominator / divisor;
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private static long GreatestCommonDivisor(
+            long left,
+            long right)
+        {
+            while (right != 0L)
+            {
+                long remainder =
+                    left % right;
+
+                left = right;
+                right = remainder;
+            }
+
+            return left;
         }
     }
 }
