@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using Fs.Liquid2D;
 
 namespace PolarGeometry
 {
@@ -48,6 +49,7 @@ namespace PolarGeometry
         private bool autoUpdate = true;
 
         private PolygonCollider2D polygonCollider;
+        private Liquid2DPolygonCollider liquid2DPolygonCollider;
         private MeshFilter meshFilter;
 
         private Mesh generatedMesh;
@@ -56,6 +58,9 @@ namespace PolarGeometry
         {
             polygonCollider =
                 GetComponent<PolygonCollider2D>();
+
+            liquid2DPolygonCollider =
+                GetComponent<Liquid2DPolygonCollider>();
 
             meshFilter =
                 GetComponent<MeshFilter>();
@@ -88,6 +93,11 @@ namespace PolarGeometry
                 positions
             );
 
+            if (liquid2DPolygonCollider != null)
+            {
+                liquid2DPolygonCollider.SetPoints(positions);
+            }
+
             GenerateMesh();
 
             polygonCollider.enabled =
@@ -101,6 +111,11 @@ namespace PolarGeometry
                 polygonCollider.pathCount = 0;
                 polygonCollider.enabled =
                     enableCollider;
+            }
+
+            if (liquid2DPolygonCollider != null)
+            {
+                liquid2DPolygonCollider.ClearPoints();
             }
 
             ClearMesh();
