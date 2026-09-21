@@ -93,10 +93,10 @@ namespace PolarGeometry
                 positions
             );
 
-            if (liquid2DPolygonCollider != null)
-            {
-                liquid2DPolygonCollider.SetPoints(positions);
-            }
+            // if (liquid2DPolygonCollider != null)
+            // {
+            //     liquid2DPolygonCollider.SetPoints(positions);
+            // }
 
             GenerateMesh();
 
@@ -113,10 +113,10 @@ namespace PolarGeometry
                     enableCollider;
             }
 
-            if (liquid2DPolygonCollider != null)
-            {
-                liquid2DPolygonCollider.ClearPoints();
-            }
+            // if (liquid2DPolygonCollider != null)
+            // {
+            //     liquid2DPolygonCollider.ClearPoints();
+            // }
 
             ClearMesh();
         }
