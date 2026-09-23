@@ -48,6 +48,14 @@ namespace PolarGeometry
         [SerializeField]
         private bool autoUpdate = true;
 
+        [Header("Silhouette")]
+        [SerializeField]
+        private bool useOuterSilhouette = false;
+
+        [SerializeField]
+        [Min(16)]
+        private int silhouetteSampleCount = 360;
+
         private PolygonCollider2D polygonCollider;
         private Liquid2DPolygonCollider liquid2DPolygonCollider;
         private MeshFilter meshFilter;
@@ -160,6 +168,30 @@ namespace PolarGeometry
             {
                 endTheta =
                     endThetaDegrees * Mathf.Deg2Rad;
+            }
+
+
+            // Generate outer silhouette when ThetaSpan
+            // exceeds one revolution.
+            if (
+                useOuterSilhouette &&
+                useFunctionThetaSpan &&
+                function.ThetaSpan is float span &&
+                span > 2f * Mathf.PI + 0.0001f
+            )
+            {
+                bool success =
+                    PolarFunctionOuterSilhouette.TrySample(
+                        function,
+                        silhouetteSampleCount,
+                        out positions,
+                        startTheta
+                    );
+
+                return
+                    success &&
+                    positions != null &&
+                    positions.Count >= 3;
             }
 
             bool includeEnd =
